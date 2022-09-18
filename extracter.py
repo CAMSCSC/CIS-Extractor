@@ -27,6 +27,8 @@ def getRemediation(pgNumber):
         pgNumber += 1
         page = pdf.pages[pgNumber]
         text = page.extract_text()
+        if text[2].isdigit() == True:
+            return False # end the function if there is no remediation for that page number section
     # find page number where there is a remediation for the section
 
     remediationStart = text.find("Remediation:") + 14
@@ -72,5 +74,5 @@ for i in range(1,20):
     os.mkdir("./MD-files/" + str(i)) # make folders for placing MD files
 
 for pageNumber in range(55,1196): # in practice should be up to 1196
-    if getSectionNumber(pageNumber) != False:
+    if getSectionNumber(pageNumber) != False and getRemediation(pageNumber) != False: # if the section number exists on that page, and that section has a remediation
         writeToFile(getSectionNumber(pageNumber), getRemediation(pageNumber))
