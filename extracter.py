@@ -1,11 +1,13 @@
+from tkinter.tix import FileSelectBox
 import pdfplumber
-
+import os 
+import markdown
 pdf = pdfplumber.open('CIS.pdf')
 
-file1 = open("MyFile.txt","a")
 
-
-def findSectionNumber(text):
+def getSectionNumber(pgNumber):
+    page = pdf.pages[pgNumber]
+    text = page.extract_text()
     if text[2].isdigit() == True:
         sectionNumber = ""
         i = 2
@@ -16,26 +18,59 @@ def findSectionNumber(text):
     else:
         return False
 
-def findRemediation(text, pgNumber):
-    if text.find("Remediation:") != -1:
-        remediationStart = text.find("Remediation:") + 14
-        remediationEnd = text.find("Default Value:")
-        if remediationEnd != -1:
-           return text[remediationStart : remediationEnd]
-        else:
-           return text[remediationStart : len(text) - 13 - len(str(pgNumber))] # 13 is some random number to get rid of the page number could be wrong idk
-    else:
-        return False
-
-for i in range(55,1196): # in practice should be up to 1196
-    page = pdf.pages[i]
-    text = page.extract_text()
+def getRemediation(pgNumber):
     
-    if findSectionNumber(text) != False:
-        file1.write("Section " + findSectionNumber(text))
-        # print(findSectionNumber(text))
-    if findRemediation(text, i) != False:
-        file1.write("\n" + findRemediation(text, i))
-        # print(findRemediation(text, i))
+    page = pdf.pages[pgNumber]
+    text = page.extract_text()
 
-file1.close()
+    while text.find("Remediation:") == -1:
+        pgNumber += 1
+        page = pdf.pages[pgNumber]
+        text = page.extract_text()
+    # find page number where there is a remediation for the section
+
+    remediationStart = text.find("Remediation:") + 14
+    remediationEnd = text.find("Default Value:")
+    if remediationEnd != -1:
+        return text[remediationStart : remediationEnd]
+    else:
+        return text[remediationStart : len(text) - 14 - len(str(pgNumber))] # 13 is some random number to get rid of the page number could be wrong idk
+
+sectionFilesWritten = []
+
+def writeToFile(sectionNum, remediation):
+    numOfPeriods = 0
+    fileSectionNumber = ""
+    folderSectionNumber = ""
+
+    for char in sectionNum:
+        if char == ".":
+            numOfPeriods += 1
+            if numOfPeriods == 2:
+                break
+        fileSectionNumber += char
+
+    for char in sectionNum:
+        if char == ".":
+            break
+        folderSectionNumber += char
+
+    file = open("./MD-files/" + folderSectionNumber + "/" + fileSectionNumber + ".md","a")
+    file.write("### " + sectionNum + "  ")
+    file.write("\n" + remediation)
+    file.close()
+
+    file2 = open("./MD-files/" + folderSectionNumber + ".md", "a+")
+    if not fileSectionNumber in sectionFilesWritten:
+        file2.write("## " + fileSectionNumber + "  ")
+        file2.write("\n ```{include} ./" + folderSectionNumber + "/" + fileSectionNumber + ".md" + "\n ``` \n")
+        sectionFilesWritten.append(fileSectionNumber)
+    file2.close()
+
+
+for i in range(1,20):
+    os.mkdir("./MD-files/" + str(i)) # make folders for placing MD files
+
+for pageNumber in range(55,1196): # in practice should be up to 1196
+    if getSectionNumber(pageNumber) != False:
+        writeToFile(getSectionNumber(pageNumber), getRemediation(pageNumber))
