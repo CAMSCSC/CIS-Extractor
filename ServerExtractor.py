@@ -114,7 +114,7 @@ def writeToFile(sectionNum, remediation):
 
     file = open("./MD-files-server/" + folderSectionNumber + "/" + fileSectionNumber + ".md","a")
     file.write("\n" + "### " + sectionNum + "  ")
-    file.write("\n" + remediation.replace('\uf0b7', ''))
+    file.write("\n" + remediation.replace('\uf0b7', '\n*'))
     file.close()
 
     file2 = open("./MD-files-server/" + folderSectionNumber + ".md", "a+")
